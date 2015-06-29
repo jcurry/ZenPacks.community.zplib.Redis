@@ -1,0 +1,3 @@
+[zenoss.zenpacks]
+ZenPacks.community.zplib.Redis = ZenPacks.community.zplib.Redis
+

@@ -1,0 +1,86 @@
+"""Models Redis devices using the redis package
+
+Simply connect to a redis server and issue the info command.  Spit out the
+results in a Nagios format.
+"""
+
+import redis
+
+# Twisted Imports
+from twisted.internet.defer import inlineCallbacks, returnValue
+
+# Zenoss Imports
+from Products.DataCollector.plugins.CollectorPlugin import PythonPlugin
+
+class zplibRedis(PythonPlugin):
+
+    """Redis modeler plugin"""
+
+    relname = 'redisPorts'
+    modname = 'ZenPacks.community.zplib.Redis.RedisPort'
+
+    requiredProperties = (
+        'zRedisPorts',
+        'zRedisDbs',
+        'zRedisPassword',
+        )
+
+    deviceProperties = PythonPlugin.deviceProperties + requiredProperties
+
+    @inlineCallbacks
+    def collect(self, device, log):
+        """Asynchronously collect data from device. Return a deferred."""
+        log.info("%s: collecting data", device.id)
+
+        redisPortList = getattr(device, 'zRedisPorts', None)
+        if not redisPortList:
+            log.error(
+                "No zRedisPorts property set - please set this for the device")
+
+            returnValue(None)
+            
+        redisPassword = getattr(device, 'zRedisPassword', None)
+        if not redisPortList:
+            # If no password set then use the null string - don't use None
+            redisPassword = ''
+
+        # response format is { <port no> : {'info':{ <info port response> }} , <port no> : {'client_list'{ <client port response> }} ,.....    }
+        # where <info port response> format is { '<key name>':<key value>, '<key name>':<key value>, ......    }
+        # wndhere <client port response> format is [ { '<key name>':<key value>, '<key name>':<key value>, ......    }]
+
+        response = {}   
+        for p in redisPortList:
+            try:
+                p_int = int(p)
+                log.info("Issuing redis.Redis(host=%s, port=%s, password=%s) \n" % (device.manageIp, p_int, redisPassword))
+                d = redis.Redis(host=device.manageIp, port=p_int, password=redisPassword)
+                
+                res={}
+                res['info'] = yield d.info()
+                res['client_list'] = yield d.client_list()
+                response[p_int] = res
+                log.info('Response is %s \n' % (response))
+            except Exception, e:
+                log.error(
+                    "%s: %s", device.id, e)
+                returnValue(None)
+
+        returnValue(response)
+
+    def process(self, device, results, log):
+        """Process results. Return iterable of datamaps or None."""
+
+        rm = self.relMap()
+
+        for k,v in results.iteritems():
+            rm.append(self.objectMap({
+                'id': 'Port_' + self.prepId(str(k)),
+                'title': 'Port ' + str(k),
+                'port_number': k,
+                'redis_mode': v['info'].get('redis_mode', None),
+                'role': v['info'].get('role', None),
+                'redis_version': v['info'].get('redis_version', None),
+                'uptime': v['info'].get('uptime_in_days', None),
+                }))
+
+        return rm

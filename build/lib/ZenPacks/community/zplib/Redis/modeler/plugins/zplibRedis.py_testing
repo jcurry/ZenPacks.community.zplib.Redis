@@ -1,0 +1,123 @@
+"""Models Redis devices using the redis package
+
+Simply connect to a redis server and issue the info command.  Spit out the
+results in a Nagios format.
+"""
+
+import redis
+
+# Twisted Imports
+from twisted.internet.defer import inlineCallbacks, returnValue
+
+# Zenoss Imports
+from Products.DataCollector.plugins.CollectorPlugin import PythonPlugin
+
+# Testing imports
+import subprocess
+from twisted.internet import defer
+import ast
+
+myhost = '54.74.105.43' # Zenoss 4.2.4 upgraded from 4.2.3 VNC 443 redirect for 5904
+myport = 16379
+
+#db = redis.Redis(host=myhost, port=myport)
+
+# fetch stats
+#info_metrics = db.info()
+# get config
+#config_metrics = db.config_get()
+# get client_list
+#client_metrics = db.client_list()
+
+class zplibRedis(PythonPlugin):
+
+    """Redis modeler plugin"""
+
+    relname = 'redisPorts'
+    modname = 'ZenPacks.community.zplib.Redis.RedisPort'
+
+    requiredProperties = (
+        'zRedisPorts',
+        'zRedisDbs',
+        'zRedisPassword',
+        )
+
+    deviceProperties = PythonPlugin.deviceProperties + requiredProperties
+
+    @inlineCallbacks
+    def collect(self, device, log):
+        """Asynchronously collect data from device. Return a deferred."""
+        log.info("%s: collecting data", device.id)
+
+        def get_test_info(cmd):
+            """ For testing - deliver output from a file rather than from a redis query """
+
+            resp=[]
+            cmd_process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            log.info('Running command to kludge data for %s\n' % (cmd))
+            for line in cmd_process.stdout.readlines():
+                resp.append(line)
+            return resp
+
+
+        redisPortList = getattr(device, 'zRedisPorts', None)
+        if not redisPortList:
+            log.error(
+                "No zRedisPorts property set - please set this for the device")
+
+            returnValue(None)
+            
+        redisPassword = getattr(device, 'zRedisPassword', None)
+        if not redisPortList:
+            # If no password set then use the null string - don't use None
+            redisPassword = ''
+
+        # response format is { <port no> : {'info':{ <info port response> }} , <port no> : {'client_list'{ <client port response> }} ,.....    }
+        # where <info port response> format is { '<key name>':<key value>, '<key name>':<key value>, ......    }
+        # wndhere <client port response> format is [ { '<key name>':<key value>, '<key name>':<key value>, ......    }]
+
+        response = {}   
+        for p in redisPortList:
+            try:
+                p_int = int(p)
+                log.info("Issuing redis.Redis(host=%s, port=%s, password=%s) \n" % (device.manageIp, p_int, redisPassword))
+                d = redis.Redis(host=device.manageIp, port=p_int, password=redisPassword)
+                
+                # This section is a kludge for testing against pre-captured data
+                info_command = 'cat /tmp/check_redis_basic_info.out'
+                client_command = 'cat /tmp/check_redis_basic_client.out'
+
+                res={}
+                res['info'] = ast.literal_eval(get_test_info(info_command)[0])
+                log.info('res[info] is %s \n' % (res['info']))
+                #res['info'] = yield d.info()
+                res['client_list'] = ast.literal_eval(get_test_info(client_command)[0])
+                log.info('res[client_list] is %s \n' % (res['client_list']))
+                #res['client_list'] = yield d.client_list()
+                response[p_int] = res
+                log.info('Response is %s \n' % (response))
+            except Exception, e:
+                log.error(
+                    "Exception caught %s: %s", device.id, e)
+                #returnValue(None)
+                return None
+
+        #returnValue(response)
+        return response
+
+    def process(self, device, results, log):
+        """Process results. Return iterable of datamaps or None."""
+        log.info('Start of process')
+        rm = self.relMap()
+
+        for k,v in results.iteritems():
+            rm.append(self.objectMap({
+                'id': 'Port_' + self.prepId(str(k)),
+                'title': 'Port ' + str(k),
+                'port_number': k,
+                'redis_mode': v['info'].get('redis_mode', None),
+                'role': v['info'].get('role', None),
+                'client_addr': v['client_list'][0].get('addr', None),
+                }))
+
+        return rm

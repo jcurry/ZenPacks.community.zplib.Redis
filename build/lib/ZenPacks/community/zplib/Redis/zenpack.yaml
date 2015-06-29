@@ -1,0 +1,297 @@
+name: ZenPacks.community.zplib.Redis
+
+zProperties:
+  DEFAULT:
+    category: Redis
+
+  zRedisPorts:
+    type: lines
+    default:
+      - 6401
+      - 6402
+      - 6403
+      - 6404
+
+  zRedisDbs:
+    type: lines
+    default:
+      - 0
+      - 1
+      - 2
+      - 3
+
+  zRedisPassword:
+    type: password
+    default: ""
+
+device_classes:
+  /Server/Linux/Redis:
+    remove: True
+
+    zProperties:
+      zPythonClass: ZenPacks.community.zplib.Redis.RedisDevice
+ 
+    templates:
+      Port:
+        description: Monitor various metrics for port component
+        targetPythonClass: ZenPacks.community.zplib.Redis.RedisPort
+
+        datasources:
+          CommandsProcessed:
+            type: Python
+            plugin_classname: ZenPacks.community.zplib.Redis.dsplugins.zplibRedisDeviceData
+            cycletime: 300
+            component: ${here/id}
+            eventClass: /Redis
+
+            datapoints:
+              total_commands_processed: 
+                rrdtype: DERIVE
+                rrdmin: 0
+
+          ConnectedClients:
+            type: Python
+            plugin_classname: ZenPacks.community.zplib.Redis.dsplugins.zplibRedisDeviceData
+            cycletime: 300
+            component: ${here/id}
+            eventClass: /Redis
+
+            datapoints:
+              connected_clients: 
+                rrdtype: GAUGE
+
+          KeyspaceHits:
+            type: Python
+            plugin_classname: ZenPacks.community.zplib.Redis.dsplugins.zplibRedisDeviceData
+            cycletime: 300
+            component: ${here/id}
+            eventClass: /Redis
+
+            datapoints:
+              keyspace_hits: 
+                rrdtype: DERIVE
+                rrdmin: 0
+
+          KeyspaceMisses:
+            type: Python
+            plugin_classname: ZenPacks.community.zplib.Redis.dsplugins.zplibRedisDeviceData
+            cycletime: 300
+            component: ${here/id}
+            eventClass: /Redis
+
+            datapoints:
+              keyspace_misses: 
+                rrdtype: DERIVE
+                rrdmin: 0
+
+          MemFragRatio:
+            type: Python
+            plugin_classname: ZenPacks.community.zplib.Redis.dsplugins.zplibRedisDeviceData
+            cycletime: 300
+            component: ${here/id}
+            eventClass: /Redis
+
+            datapoints:
+              mem_fragmentation_ratio: 
+                rrdtype: GAUGE
+
+          UsedMemory:
+            type: Python
+            plugin_classname: ZenPacks.community.zplib.Redis.dsplugins.zplibRedisDeviceData
+            cycletime: 300
+            component: ${here/id}
+            eventClass: /Redis
+
+            datapoints:
+              used_memory: 
+                rrdtype: GAUGE
+
+          UsedCpuUser:
+            type: Python
+            plugin_classname: ZenPacks.community.zplib.Redis.dsplugins.zplibRedisDeviceData
+            cycletime: 300
+            component: ${here/id}
+            eventClass: /Redis
+
+            datapoints:
+              used_cpu_user: 
+                rrdtype: GAUGE
+
+        graphs:
+          Commands processed:
+            units: commands proc. / sec
+
+            graphpoints:
+              Commands processed:
+                dpName: CommandsProcessed_total_commands_processed
+                format: "%7.2lf"
+
+          Connected Clients:
+            units: connected clients
+
+            graphpoints:
+              Connected clients:
+                dpName: ConnectedClients_connected_clients
+                format: "%7.2lf"
+
+          Keyspace Hits and Misses:
+            units: hit & miss / sec
+
+            graphpoints:
+              Keyspace Hits:
+                dpName: KeyspaceHits_keyspace_hits
+                format: "%7.2lf"
+              Keyspace Misses:
+                dpName: KeyspaceMisses_keyspace_misses
+                format: "%7.2lf"
+
+          Memory Fragmentation Ratio:
+            units: ratio
+
+            graphpoints:
+              Memory Fragmentation Ratio:
+                dpName: MemFragRatio_mem_fragmentation_ratio
+                format: "%7.2lf"
+
+          Memory Used:
+            units: Bytes
+
+            graphpoints:
+              Memory Used:
+                dpName: UsedMemory_used_memory
+                format: "%7.2lf"
+
+          CPU :
+            units: cpu
+
+            graphpoints:
+              CPU:
+                dpName: UsedCpuUser_used_cpu_user
+                format: "%7.2lf"
+
+      Database:
+        description: Monitor various metrics for database component
+        targetPythonClass: ZenPacks.community.zplib.Redis.RedisDb
+
+        datasources:
+          Keys:
+            type: Python
+            plugin_classname: ZenPacks.community.zplib.Redis.dsplugins.zplibRedisDeviceData
+            cycletime: 300
+            component: ${here/id}
+            eventClass: /Redis
+
+            datapoints:
+              keys: 
+                rrdtype: GAUGE
+
+          Expires:
+            type: Python
+            plugin_classname: ZenPacks.community.zplib.Redis.dsplugins.zplibRedisDeviceData
+            cycletime: 300
+            component: ${here/id}
+            eventClass: /Redis
+
+            datapoints:
+              expires: 
+                rrdtype: GAUGE
+
+          TTL:
+            type: Python
+            plugin_classname: ZenPacks.community.zplib.Redis.dsplugins.zplibRedisDeviceData
+            cycletime: 300
+            component: ${here/id}
+            eventClass: /Redis
+
+            datapoints:
+              avg_ttl: 
+                rrdtype: GAUGE
+
+        graphs:
+          Keys:
+            units: keys
+
+            graphpoints:
+              Keys:
+                dpName: Keys_keys
+                format: "%7.2lf"
+
+          Expires:
+            units: expires
+
+            graphpoints:
+              Expires:
+                dpName: Expires_expires
+                format: "%7.2lf"
+
+          TTL:
+            units: seconds
+
+            graphpoints:
+              TTL:
+                dpName: TTL_avg_ttl
+                rpn:  1000,/       # note that avg_ttl is in milliseconds
+                format: "%7.2lf"
+
+
+#    zCollectorPlugins:
+#            - zenoss.snmp.NewDeviceMap
+#            - zenoss.snmp.DeviceMap
+#            - zenoss.snmp.InterfaceMap
+
+classes:
+  DEFAULTS:
+    base: [zenpacklib.Component]
+
+  RedisDevice:
+    base: [zenpacklib.Device]
+    label: Redis Server
+
+  RedisPort:
+      label: Port
+      order: 60 # Display before Database
+
+      properties:
+        port_number:
+          type: int
+          label: Port Number
+        redis_mode:
+          type: string
+          label: Redis Mode
+        role:
+          type: string
+          label: Redis Role
+          short_label: Role
+        redis_version:
+          type: string
+          label: Redis Version
+          short_label: Redis Ver.
+        uptime:
+          type: string
+          label: Uptime (days)
+          short_label: Uptime
+          label_width: 70
+
+  RedisDb:
+      label: Database
+      order: 70 # Display after Port
+
+      properties:
+        db_number:
+          type: int
+          label: Database Number
+          short_label: DB #
+        db_avg_ttl:
+          type: int
+          label: Average TTL
+          short_label: TTL #
+        db_keys:
+          type: int
+          label: Keys
+          short_label: Keys
+
+class_relationships:
+  - RedisDevice 1:MC RedisPort
+  - RedisPort 1:MC RedisDb
+
+
