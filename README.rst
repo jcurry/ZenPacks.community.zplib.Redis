@@ -13,6 +13,11 @@ device classes, device and component objects or zProperties.  Templates are also
 These elements are all created through the zenpack.yaml file in the main directory of the ZenPack.
 See http://zenpacklib.zenoss.com/en/latest/index.html for more information on zenpacklib.
 
+Note that if templates are changed in the zenpack.yaml file then when the ZenPack is reinstalled, the
+existing templates will be renamed in the Zenoss ZODB database and the new template from the YAML file
+will be installed; thus a backup is effectively taken.  Old templates should be deleted in the Zenoss GUI
+when the new version is proven.
+
 The ZenPack uses the redis-py Python library which is automatically installed with Zenoss 4 and later.
 See https://pypi.python.org/pypi/redis for more information.  Zenoss also automatically installs the
 redis package which is useful for checking and debugging - see http://redis.io/ .
@@ -113,7 +118,7 @@ https://github.com/jcurry/ZenPacks.community.zplib.Redis  use the ZIP button
 (top left) to download a tgz file and unpack it to a local directory, say,
 $ZENHOME/local.  Install from $ZENHOME/local with:
 
-zenpack --link --install ZenPacks.community.Redis
+zenpack --link --install ZenPacks.community.zplib.Redis
 
 Restart zenoss after installation.
 
