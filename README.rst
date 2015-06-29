@@ -109,7 +109,7 @@ ZenPack installation
 
 This ZenPack can be installed from the .egg file using either the GUI or the
 zenpack command line. To install in development mode, from github - 
-https://github.com/jcurry/ZenPacks.community.Redis  use the ZIP button
+https://github.com/jcurry/ZenPacks.community.zplib.Redis  use the ZIP button
 (top left) to download a tgz file and unpack it to a local directory, say,
 $ZENHOME/local.  Install from $ZENHOME/local with:
 
@@ -136,7 +136,7 @@ See the screenshots directory.
 
 .. External References Below. Nothing Below This Line Should Be Rendered
 
-.. _Latest Package for Python 2.7: https://github.com/jcurry/ZenPacks.community.Redis/blob/master/dist/ZenPacks.community.Redis-1.0.3-py2.7.egg?raw=true
+.. _Latest Package for Python 2.7: https://github.com/jcurry/ZenPacks.community.zplib.Redis/blob/master/dist/ZenPacks.community.zplib.Redis-1.0.0-py2.7.egg?raw=true
 
 Acknowledgements
 ================
