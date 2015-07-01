@@ -6,7 +6,8 @@ results in a Nagios format.
 
 import redis
 
-myhost = '192.168.10.42' # zen42.class.example.org
+#myhost = '192.168.10.42' # zen42.class.example.org
+myhost = '176.34.169.62' # zen42.class.example.org
 myport = 16379
 #myhost = '10.64.16.79' # sc01feedredis01
 #myport = 6401
